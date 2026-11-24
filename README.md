@@ -4,6 +4,12 @@
 
 Aplicativo desktop nativo para Windows para gerenciamento de informações pessoais e profissionais: diário de atividades, anotações em Markdown, projetos, tarefas, links e lembretes — tudo em um banco **local** (SQLite), sem cadastro, sem nuvem e 100% offline.
 
+## 📥 Download
+
+**[⬇️ Baixar o instalador (última versão)](https://github.com/rafaelsantos01/Notes/releases/latest)**
+
+Baixe o `Notes_x.y.z_x64-setup.exe` na seção *Assets* da release e execute. Requer Windows 10/11.
+
 ![Stack](https://img.shields.io/badge/Tauri%202-Rust%20·%20React%20·%20TypeScript-6366f1)
 
 ## Funcionalidades
