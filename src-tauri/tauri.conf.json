@@ -28,10 +28,19 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "createUpdaterArtifacts": true,
     "icon": ["icons/icon.ico", "icons/32x32.png", "icons/128x128.png"],
     "windows": {
       "webviewInstallMode": {
         "type": "downloadBootstrapper"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE2OUYwQjdGNUFCNzEwRkIKUldUN0VMZGFmd3VmRnROMStzajQ4aFRleGlicmhtcFFZSlVlOFVjcVdiNlc3MWRCUkV3QTBHeDYK",
+      "windows": {
+        "installMode": "passive"
       }
     }
   }

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { QuickCreateDialogs } from "./quick-create";
@@ -9,6 +9,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useGlobalShortcuts } from "@/hooks/use-global-shortcuts";
 import { useThemeStore } from "@/stores/theme";
 import { useProjectsStore } from "@/stores/data";
+import { cmdSilent } from "@/services/api";
+import { updater } from "@/services";
+import type { UpdateInfo } from "@/types/domain";
 
 export function AppShell() {
   const location = useLocation();
@@ -24,6 +27,45 @@ export function AppShell() {
   React.useEffect(() => {
     void loadProjects();
   }, [loadProjects]);
+
+  // Verificação automática de atualizações (silenciosa) na inicialização.
+  React.useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const auto = await cmdSilent<string | null>("settings_get", {
+          key: "updaterAutoCheck",
+        });
+        if (auto === "0" || cancelled) return;
+        const endpoint = await cmdSilent<string | null>("settings_get", {
+          key: "updaterEndpoint",
+        });
+        if (!endpoint || cancelled) return;
+
+        const info = await cmdSilent<UpdateInfo | null>("updater_check");
+        if (info && !cancelled) {
+          toast.info(`Atualização disponível: v${info.version}`, {
+            description: "Baixe e instale a nova versão.",
+            duration: 20000,
+            action: {
+              label: "Instalar",
+              onClick: () => {
+                toast.info("Baixando atualização…", {
+                  description: "O aplicativo será reiniciado ao concluir.",
+                });
+                void updater.downloadInstall().catch(() => {});
+              },
+            },
+          });
+        }
+      } catch {
+        // verificação automática é silenciosa por design
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Scroll to top on navigation
   const scrollRef = React.useRef<HTMLDivElement>(null);

@@ -250,3 +250,19 @@ export interface TagInfo {
   name: string;
   count: number;
 }
+
+// ---------------------------------------------------------------------------
+// Atualizações
+// ---------------------------------------------------------------------------
+
+export interface UpdateInfo {
+  version: string;
+  notes: string;
+  date: string | null;
+}
+
+/** Payload dos eventos `updater://progress`. */
+export type UpdateProgress =
+  | { event: "started" }
+  | { event: "progress"; downloaded: number; total: number | null }
+  | { event: "finished" };

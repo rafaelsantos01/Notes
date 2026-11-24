@@ -7,3 +7,4 @@ pub mod projects;
 pub mod reminders;
 pub mod settings;
 pub mod tasks;
+pub mod updater;

@@ -306,3 +306,12 @@ pub struct TagInfo {
     pub name: String,
     pub count: i64,
 }
+
+/// Informações sobre uma atualização disponível.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateInfo {
+    pub version: String,
+    pub notes: String,
+    pub date: Option<String>,
+}

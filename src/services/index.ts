@@ -27,6 +27,7 @@ import type {
   TaskInput,
   TaskListFilter,
   TaskUpdateInput,
+  UpdateInfo,
 } from "@/types/domain";
 
 // Projects -------------------------------------------------------------------
@@ -122,4 +123,12 @@ export const backup = {
   exportActivitiesMarkdown: (dir: string) => cmd<number>("export_activities_markdown", { dir }),
   exportJson: (targetPath: string) => cmd<void>("export_json", { targetPath }),
   getDbPath: () => cmd<string>("get_db_path"),
+};
+
+// Updater ---------------------------------------------------------------------
+
+export const updater = {
+  getVersion: () => cmd<string>("app_get_version"),
+  check: () => cmd<UpdateInfo | null>("updater_check"),
+  downloadInstall: () => cmd<void>("updater_download_install"),
 };

@@ -19,6 +19,7 @@ Aplicativo desktop nativo para Windows para gerenciamento de informações pesso
 | **Calendário** | Grade mensal com marcadores por dia e painel de detalhes |
 | **Busca global** | `Ctrl+K` pesquisa em tudo, com resultados agrupados e navegação direta |
 | **Backup/Export** | Backup SQLite (`VACUUM INTO`), restauração, exportação Markdown e JSON |
+| **Atualizações** | Verificação manual e automática, download e instalação via GitHub Releases (assinado) |
 
 ## Stack
 
@@ -48,6 +49,9 @@ bun run typecheck  # verificação de tipos
 bun run build      # gera instalador NSIS (.exe) em src-tauri/target/release/bundle/
 ```
 
+Para builds **assinados** (necessários para o auto-update), defina as variáveis
+de ambiente de assinatura antes — veja [docs/RELEASE.md](docs/RELEASE.md).
+
 ## Atalhos de teclado
 
 | Atalho | Ação |
@@ -75,6 +79,7 @@ Backups manuais, exportações Markdown/JSON e restauração estão em **Configu
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — camadas, fluxo de dados e decisões
 - [docs/DATA_MODEL.md](docs/DATA_MODEL.md) — schema do banco e relacionamentos
+- [docs/RELEASE.md](docs/RELEASE.md) — assinatura, releases e auto-update
 
 ## Roadmap
 

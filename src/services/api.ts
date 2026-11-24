@@ -18,6 +18,17 @@ export async function cmd<T>(command: string, args?: Record<string, unknown>): P
   }
 }
 
+/**
+ * Como `cmd`, mas sem exibir toast em caso de erro — usado para verificações
+ * automáticas em segundo plano (ex.: check de atualização na inicialização).
+ */
+export async function cmdSilent<T>(
+  command: string,
+  args?: Record<string, unknown>
+): Promise<T> {
+  return invoke<T>(command, args);
+}
+
 export function errorMessage(error: unknown): string {
   if (typeof error === "string") return error;
   if (error && typeof error === "object" && "message" in error) {

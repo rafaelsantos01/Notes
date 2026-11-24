@@ -51,3 +51,17 @@ impl AppState {
         Ok(())
     }
 }
+
+/// Estado do atualizador: guarda a atualização verificada
+/// entre os comandos `updater_check` e `updater_download_install`.
+pub struct UpdaterState {
+    pub pending: Mutex<Option<tauri_plugin_updater::Update>>,
+}
+
+impl Default for UpdaterState {
+    fn default() -> Self {
+        Self {
+            pending: Mutex::new(None),
+        }
+    }
+}

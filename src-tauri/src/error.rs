@@ -12,6 +12,8 @@ pub enum AppError {
     Database(#[from] rusqlite::Error),
     #[error("erro de E/S: {0}")]
     Io(#[from] std::io::Error),
+    #[error("atualização: {0}")]
+    Updater(#[from] tauri_plugin_updater::Error),
     #[error("{0}")]
     Internal(String),
 }
@@ -27,6 +29,7 @@ impl serde::Serialize for AppError {
             AppError::Validation(_) => "validation",
             AppError::Database(_) => "database",
             AppError::Io(_) => "io",
+            AppError::Updater(_) => "updater",
             AppError::Internal(_) => "internal",
         };
         s.serialize_field("kind", kind)?;

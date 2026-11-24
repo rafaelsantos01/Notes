@@ -5,7 +5,7 @@ mod models;
 mod repo;
 mod state;
 
-use state::AppState;
+use state::{AppState, UpdaterState};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -13,6 +13,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir).map_err(|e| {
@@ -28,6 +29,7 @@ pub fn run() {
             log::info_placeholder(&db_path);
 
             app.manage(AppState::new(conn, db_path.clone()));
+            app.manage(UpdaterState::default());
 
             // Backup automático (se habilitado nas configurações).
             let state = app.state::<AppState>();
@@ -89,6 +91,10 @@ pub fn run() {
             commands::backup::export_notes_markdown,
             commands::backup::export_activities_markdown,
             commands::backup::export_json,
+            // atualizações
+            commands::updater::app_get_version,
+            commands::updater::updater_check,
+            commands::updater::updater_download_install,
         ])
         .run(tauri::generate_context!())
         .expect("erro ao executar o Notes");

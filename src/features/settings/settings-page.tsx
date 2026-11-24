@@ -1,7 +1,9 @@
 import * as React from "react";
+import { listen } from "@tauri-apps/api/event";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import {
+  CheckCircle2,
   Database,
   Download,
   FileJson,
@@ -9,8 +11,10 @@ import {
   FolderOpen,
   HardDriveDownload,
   History,
+  Loader2,
   Monitor,
   Moon,
+  RefreshCw,
   RotateCcw,
   Save,
   Sun,
@@ -18,21 +22,109 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { PageHeader } from "@/components/common/page-header";
-import { backup } from "@/services";
+import { backup, settings, updater } from "@/services";
 import { useThemeStore } from "@/stores/theme";
+import { formatBytes } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import type { UpdateInfo, UpdateProgress } from "@/types/domain";
 
 export function SettingsPage() {
   const { mode, setMode } = useThemeStore();
   const [dbPath, setDbPath] = React.useState<string | null>(null);
   const [restoring, setRestoring] = React.useState<string | false>(false);
 
+  // Atualizações -------------------------------------------------------------
+  const [appVersion, setAppVersion] = React.useState("…");
+  const [endpoint, setEndpoint] = React.useState("");
+  const [token, setToken] = React.useState("");
+  const [autoCheck, setAutoCheck] = React.useState(true);
+  const [checking, setChecking] = React.useState(false);
+  const [available, setAvailable] = React.useState<UpdateInfo | null>(null);
+  const [installing, setInstalling] = React.useState(false);
+  const [progress, setProgress] = React.useState<{
+    downloaded: number;
+    total: number | null;
+  } | null>(null);
+
   React.useEffect(() => {
     void backup.getDbPath().then(setDbPath);
+    void updater.getVersion().then(setAppVersion);
+    void (async () => {
+      const [e, t, a] = await Promise.all([
+        settings.get("updaterEndpoint"),
+        settings.get("updaterToken"),
+        settings.get("updaterAutoCheck"),
+      ]);
+      setEndpoint(e ?? "");
+      setToken(t ?? "");
+      setAutoCheck(a !== "0");
+    })();
   }, []);
+
+  // Progresso do download (eventos do backend)
+  React.useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let cancelled = false;
+    void listen<UpdateProgress>("updater://progress", (event) => {
+      const payload = event.payload;
+      if (payload.event === "progress") {
+        setProgress({ downloaded: payload.downloaded, total: payload.total });
+      } else if (payload.event === "started") {
+        setProgress({ downloaded: 0, total: null });
+      }
+    }).then((fn) => {
+      if (cancelled) fn();
+      else unlisten = fn;
+    });
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, []);
+
+  const saveUpdaterConfig = async () => {
+    await settings.set("updaterEndpoint", endpoint.trim());
+    await settings.set("updaterToken", token.trim());
+    await settings.set("updaterAutoCheck", autoCheck ? "1" : "0");
+    toast.success("Configurações de atualização salvas");
+  };
+
+  const checkForUpdates = async () => {
+    setChecking(true);
+    setAvailable(null);
+    try {
+      await saveUpdaterConfig();
+      const info = await updater.check();
+      if (info) {
+        setAvailable(info);
+        toast.success(`Versão ${info.version} disponível`);
+      } else {
+        toast.info("Nenhuma atualização disponível", {
+          description: `Você já está na versão mais recente (${appVersion}).`,
+        });
+      }
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const installUpdate = async () => {
+    setInstalling(true);
+    setProgress({ downloaded: 0, total: null });
+    toast.info("Baixando atualização…", {
+      description: "O aplicativo será reiniciado ao concluir.",
+    });
+    await updater.downloadInstall();
+  };
+
+  const progressPercent =
+    progress && progress.total ? Math.min(100, (progress.downloaded / progress.total) * 100) : null;
 
   const handleBackup = async () => {
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
@@ -87,7 +179,7 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-5 p-6">
-      <PageHeader title="Configurações" description="Aparência, dados e informações do aplicativo." />
+      <PageHeader title="Configurações" description="Aparência, dados, atualizações e informações." />
 
       {/* Aparência */}
       <Card className="p-5">
@@ -116,6 +208,115 @@ export function SettingsPage() {
               {label}
             </button>
           ))}
+        </div>
+      </Card>
+
+      {/* Atualizações */}
+      <Card className="p-5">
+        <div className="flex items-center justify-between">
+          <SectionTitle icon={RefreshCw} title="Atualizações" />
+          <span className="text-xs text-muted-foreground">Versão atual: {appVersion}</span>
+        </div>
+
+        <div className="mt-3 space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="updater-endpoint">Fonte de atualização (latest.json)</Label>
+            <Input
+              id="updater-endpoint"
+              value={endpoint}
+              onChange={(e) => setEndpoint(e.target.value)}
+              placeholder="https://github.com/USUARIO/REPO/releases/latest/download/latest.json"
+              spellCheck={false}
+            />
+            <p className="text-xs text-muted-foreground">
+              GitHub Releases: use o formato acima com o seu repositório.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="updater-token">Token de acesso (opcional, repo privado)</Label>
+            <Input
+              id="updater-token"
+              type="password"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="ghp_…"
+              spellCheck={false}
+            />
+          </div>
+
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <Checkbox checked={autoCheck} onCheckedChange={(v) => setAutoCheck(v === true)} />
+            Verificar atualizações automaticamente ao iniciar
+          </label>
+
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button variant="outline" onClick={() => void saveUpdaterConfig()} className="gap-2">
+              <Save className="size-4" />
+              Salvar
+            </Button>
+            <Button
+              onClick={() => void checkForUpdates()}
+              disabled={checking || !endpoint.trim()}
+              className="gap-2"
+            >
+              {checking ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <RefreshCw className="size-4" />
+              )}
+              {checking ? "Verificando…" : "Verificar atualizações"}
+            </Button>
+          </div>
+
+          {available && (
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-1.5 text-sm font-medium">
+                    <CheckCircle2 className="size-4 text-emerald-500" />
+                    Versão {available.version} disponível
+                    {available.date && (
+                      <span className="text-xs font-normal text-muted-foreground">
+                        · {new Date(available.date).toLocaleDateString("pt-BR")}
+                      </span>
+                    )}
+                  </p>
+                  {available.notes && (
+                    <p className="mt-1 line-clamp-4 whitespace-pre-wrap text-xs text-muted-foreground">
+                      {available.notes}
+                    </p>
+                  )}
+                </div>
+                {!installing && (
+                  <Button size="sm" onClick={() => void installUpdate()} className="gap-1.5">
+                    <Download className="size-3.5" />
+                    Baixar e instalar
+                  </Button>
+                )}
+              </div>
+
+              {installing && progress && (
+                <div className="mt-3 space-y-1.5">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={cn(
+                        "h-full rounded-full bg-primary transition-all",
+                        progressPercent === null && "w-full animate-pulse"
+                      )}
+                      style={progressPercent !== null ? { width: `${progressPercent}%` } : undefined}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {progress.total
+                      ? `Baixando… ${formatBytes(progress.downloaded)} de ${formatBytes(progress.total)}`
+                      : `Baixando… ${formatBytes(progress.downloaded)}`}
+                    <span className="block">O aplicativo será reiniciado ao concluir.</span>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </Card>
 
@@ -179,7 +380,7 @@ export function SettingsPage() {
           </div>
           <div className="flex items-center justify-between gap-3">
             <dt className="text-muted-foreground">Versão</dt>
-            <dd>Notes 0.1.0</dd>
+            <dd>Notes {appVersion}</dd>
           </div>
         </dl>
         {dbPath && (

@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "release": "bun run scripts/release.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.1.0",
