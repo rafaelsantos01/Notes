@@ -8,6 +8,10 @@ mod state;
 use state::{AppState, UpdaterState};
 use tauri::Manager;
 
+/// Fonte padrão de atualizações (GitHub Releases deste projeto).
+const DEFAULT_UPDATER_ENDPOINT: &str =
+    "https://github.com/rafaelsantos01/Notes/releases/latest/download/latest.json";
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -36,6 +40,14 @@ pub fn run() {
             if let Err(e) = state.with_conn(|conn| repo::backup::maybe_auto_backup(conn, &data_dir)) {
                 eprintln!("[notes] auto-backup falhou: {e}");
             }
+
+            // Endpoint de atualização padrão (na primeira execução).
+            let _ = state.with_conn(|conn| {
+                if repo::settings::get(conn, "updaterEndpoint")?.is_none() {
+                    repo::settings::set(conn, "updaterEndpoint", DEFAULT_UPDATER_ENDPOINT)?;
+                }
+                Ok(())
+            });
 
             Ok(())
         })
