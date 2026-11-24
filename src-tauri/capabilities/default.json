@@ -1,0 +1,16 @@
+{
+  "$schema": "gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permissões padrão da janela principal do Notes.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://**" }, { "url": "http://**" }]
+    },
+    "opener:allow-default-urls",
+    "opener:allow-reveal-item-in-dir"
+  ]
+}
