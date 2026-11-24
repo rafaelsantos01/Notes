@@ -52,6 +52,14 @@ bun run build      # gera instalador NSIS (.exe) em src-tauri/target/release/bun
 Para builds **assinados** (necessários para o auto-update), defina as variáveis
 de ambiente de assinatura antes — veja [docs/RELEASE.md](docs/RELEASE.md).
 
+## Releases automáticas (GitHub Actions)
+
+Ao enviar uma tag `vX.Y.Z`, o workflow `.github/workflows/release.yml` builda,
+testa, assina e publica a release completa (instalador + `latest.json`)
+automaticamente. Requer os secrets `TAURI_SIGNING_PRIVATE_KEY` (e
+`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) no repositório. O CI
+(`ci.yml`) roda lint, typecheck e todos os testes em cada push/PR.
+
 ## Atalhos de teclado
 
 | Atalho | Ação |

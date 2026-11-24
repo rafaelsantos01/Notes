@@ -11,6 +11,35 @@ instalação com um clique (o aplicativo reinicia ao concluir).
   oferece instalar quando houver versão nova.
 - O endpoint e um token opcional (repo privado) ficam salvos nas configurações.
 
+## Publicar uma nova versão (forma automática — recomendada)
+
+O workflow [`.github/workflows/release.yml`](../.github/workflows/release.yml)
+builda, testa, assina, gera o `latest.json` e publica a release completa
+sempre que uma tag `v*` é enviada:
+
+```bash
+# 1. Suba a versão em src-tauri/tauri.conf.json → "version": "X.Y.Z"
+# 2. Commit e tag:
+git commit -am "chore: versão X.Y.Z"
+git tag vX.Y.Z
+git push origin main vX.Y.Z
+# 3. Aguarde o Actions concluir — a release aparece pronta com os artefatos
+```
+
+### Pré-requisito único (uma vez): secrets no repositório
+
+Em **Settings → Secrets and variables → Actions → New repository secret**:
+
+| Nome | Valor |
+| --- | --- |
+| `TAURI_SIGNING_PRIVATE_KEY` | conteúdo de `%USERPROFILE%\.tauri\notes-updater.key` |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | (vazio — a chave local não tem senha) |
+
+> Para ver o conteúdo da chave: `cat ~/.tauri/notes-updater.key` (Git Bash).
+
+O workflow também exige que a tag case com a versão do `tauri.conf.json`
+(`v0.2.0` ↔ `0.2.0`) — validado pelo script de release.
+
 ## Preparação única: chave de assinatura
 
 Já gerada em `%USERPROFILE%\.tauri\notes-updater.key` (sem senha). A chave
@@ -19,7 +48,7 @@ Já gerada em `%USERPROFILE%\.tauri\notes-updater.key` (sem senha). A chave
 > ⚠️ **Guarde a private key com backup.** Sem ela não é possível publicar
 > atualizações que o app aceite. Não a commite no repositório.
 
-## Fluxo de release (a cada versão)
+## Fluxo manual (alternativo, sem GitHub Actions)
 
 1. **Suba a versão** em `src-tauri/tauri.conf.json` → `"version": "X.Y.Z"`.
 
@@ -46,22 +75,11 @@ Já gerada em `%USERPROFILE%\.tauri\notes-updater.key` (sem senha). A chave
 3. **Gere o `latest.json`:**
 
    ```bash
-   bun run release --repo USUARIO/REPO --tag vX.Y.Z --notes "O que mudou"
+   bun run release --repo rafaelsantos01/Notes --notes "O que mudou"
    ```
 
-   Cria `bundle/nsis/latest.json` apontando para o asset da release.
-
-4. **Crie a release no GitHub** (tag `vX.Y.Z`) e anexe:
-   - `Notes_X.Y.Z_x64-setup.exe`
-   - `latest.json`
-
-5. **Configure o app** (uma única vez, em Configurações → Atualizações):
-
-   ```
-   https://github.com/USUARIO/REPO/releases/latest/download/latest.json
-   ```
-
-A partir daí, todos os builds antigos detectam e instalam as novas versões.
+4. **Crie a release no GitHub** (tag `vX.Y.Z`) e anexe o instalador e o
+   `latest.json`.
 
 ## Repos privados
 

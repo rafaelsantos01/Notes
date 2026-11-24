@@ -1,0 +1,37 @@
+name: CI
+
+# Qualidade em cada push/PR para a main: lint, tipos e testes.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Instalar dependências
+        run: bun install
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Testes (frontend)
+        run: bun test
+
+      - name: Testes (backend)
+        working-directory: src-tauri
+        run: cargo test

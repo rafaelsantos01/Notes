@@ -77,6 +77,13 @@ function main() {
   }
 
   const tag = getArg("tag") ?? `v${version}`;
+  if (tag !== `v${version}`) {
+    console.error(
+      `A tag ${tag} não corresponde à versão ${version} definida em src-tauri/tauri.conf.json.\n` +
+        `Atualize a versão no tauri.conf.json (ou use --tag v${version}).`
+    );
+    process.exit(1);
+  }
   const notes = getArg("notes") ?? `Notes ${version}`;
   const setupName = setupPath.split(/[\\/]/).pop()!;
   const downloadUrl = `https://github.com/${repo}/releases/download/${tag}/${setupName}`;

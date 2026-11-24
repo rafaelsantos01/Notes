@@ -1,0 +1,57 @@
+name: Release
+
+# A cada push de tag v*, o workflow builda, assina e publica a release
+# completa (instalador + assinatura + latest.json) no GitHub.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Instalar Rust (MSVC)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache do Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Instalar dependências
+        run: bun install
+
+      - name: Testes (frontend)
+        run: bun test
+
+      - name: Testes (backend)
+        working-directory: src-tauri
+        run: cargo test
+
+      - name: Build assinado
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: bun run build
+
+      - name: Gerar latest.json
+        run: bun run release --repo rafaelsantos01/Notes --tag ${{ github.ref_name }}
+
+      - name: Publicar release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            src-tauri/target/release/bundle/nsis/Notes_*_x64-setup.exe
+            src-tauri/target/release/bundle/nsis/Notes_*_x64-setup.exe.sig
+            src-tauri/target/release/bundle/nsis/latest.json
+          generate_release_notes: true
